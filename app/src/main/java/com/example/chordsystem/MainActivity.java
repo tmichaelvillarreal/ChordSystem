@@ -1,11 +1,13 @@
 package com.example.chordsystem;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -34,11 +36,6 @@ public class MainActivity extends AppCompatActivity implements NodeAdapter.ItemC
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         setTitle("Chord System");
-
-//        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
-//        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-//        String lookupKeyString = sharedPref.getString("lookup_key", "0");
-//        final int lookupKey = Integer.parseInt(lookupKeyString);
 
         lookupKeyEditText = findViewById(R.id.et_mainActivity_lookupKey);
         lookupKeyEditText.setText("0");
@@ -70,7 +67,7 @@ public class MainActivity extends AppCompatActivity implements NodeAdapter.ItemC
                 String lookupKeyStr = lookupKeyEditText.getText().toString();
                 int lookupKey = Integer.parseInt(lookupKeyStr);
 
-                lookup(lookupKey);
+                lookupK(lookupKey);
             }
         });
 
@@ -90,16 +87,56 @@ public class MainActivity extends AppCompatActivity implements NodeAdapter.ItemC
             nodeList.add(node);
         }
 
+        int startingId = (int)(Math.random() * 16);
+        Node startNode = new Node(true);
+        startNode.setId(startingId);
+        startNode.setSuccNode(startNode);
+        startNode.setPredNode(startNode);
+
+        nodeList.remove(startingId);
+        nodeList.add(startingId, startNode);
+
         adapter.setNodes(nodeList);
         recyclerView.getLayoutManager().scrollToPosition(Integer.MAX_VALUE / 2);
+
+        AlertDialog.Builder mAlert = new AlertDialog.Builder(MainActivity.this);
+        mAlert.setTitle("Deleting Nodes");
+        mAlert.setMessage("In order to delete a node, simply click on a node and hold until the node is deleted.");
+
+        mAlert.setPositiveButton("Got it", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+            }
+        });
+
+        mAlert.show();
 
     }
 
     /**
-     * This method adds a node to the chord system. The way in which the method was written allows a node
-     * to be added even if there are 0 nodes in the system.
+     * Method to add a node to the chord system making use of the lookup algorithm
      * */
     public void addNode() {
+
+        boolean checkIfEmpty = true;
+        for(int i = 0; i < nodeList.size(); i++) {
+            if(nodeList.get(i).isRealNode() == true) {
+                checkIfEmpty = false;
+            }
+        }
+
+        if(checkIfEmpty) {
+            int startingId = (int)(Math.random() * 16);
+            Node startNode = new Node(true);
+            startNode.setId(startingId);
+            startNode.setSuccNode(startNode);
+            startNode.setPredNode(startNode);
+
+            nodeList.remove(startingId);
+            nodeList.add(startingId, startNode);
+            return;
+        }
+
         int potentialId = -1;
         boolean conflict = true;
 
@@ -116,60 +153,19 @@ public class MainActivity extends AppCompatActivity implements NodeAdapter.ItemC
         }
 
         int id = potentialId;
-        Node newNode = new Node(true); //Creating an actual node
+        Node newNode = new Node(true);
         newNode.setId(id);
-        nodeList.remove(id); //We are removing the fake node at this point
-        nodeList.add(id, newNode); //Adding the newly created real node to the list of nodes
 
+        Node succId = lookup(id);
 
-        /**
-         * This for loops looks up the predecessor node for the newly created node. It first goes
-         * backwards from where the node is located and marks the first node that it comes across
-         * as its predecessor as it should. If there is no node before i reaches 0, another for loop
-         * is used that starts at the end of the list and goes backwards from there. The point of
-         * that is to demonstrate that a chord system is a circle chain of connections.
-         * */
-        for(int i = id; i >= 0; i--) {
-            if(nodeList.get(i).isRealNode() == true && nodeList.get(i).getId() != id) {
-                nodeList.get(id).setPredNode(nodeList.get(i));
-                nodeList.get(i).setSuccNode(nodeList.get(id)); //Changes the successor node of a node that already exists
-                break;
-            }
-            if(i == 0) {
-                for(int j = nodeList.size() - 1; j >= 0; j--) {
-                    if(nodeList.get(j).isRealNode() == true) {
-                        nodeList.get(id).setPredNode(nodeList.get(j));
-                        nodeList.get(j).setSuccNode(nodeList.get(id));
-                        break;
-                    }
-                }
-            }
-        }
+        newNode.setSuccNode(succId);
+        newNode.setPredNode(succId.getPredNode());
 
-        /**
-         * This for loop is dedicated to finding the successor node for the newly created node.
-         * It first starts from the position of the newly created node and goes up from there. If
-         * it comes across a node, it makes that node its successor and changes the predecessor of
-         * that node to be the new node. If it cannot find a node before the end of the list, then
-         * another for loop is used to start at the beginning of the list of nodes and goes up, until
-         * a real node is found.
-         * */
-        for(int i = id; i < nodeList.size(); i++) {
-            if(nodeList.get(i).isRealNode() == true && nodeList.get(i).getId() != id) {
-                nodeList.get(id).setSuccNode(nodeList.get(i));
-                nodeList.get(i).setPredNode(nodeList.get(id));
-                break;
-            }
-            if(i == nodeList.size() - 1) {
-                for(int j = 0; j < nodeList.size(); j++) {
-                    if(nodeList.get(j).isRealNode() == true) {
-                        nodeList.get(id).setSuccNode(nodeList.get(j));
-                        nodeList.get(j).setPredNode(nodeList.get(id));
-                        break;
-                    }
-                }
-            }
-        }
+        succId.getPredNode().setSuccNode(newNode);
+        succId.setPredNode(newNode);
+
+        nodeList.remove(id);
+        nodeList.add(id, newNode);
 
         adapter.setNodes(nodeList);
     }
@@ -200,7 +196,7 @@ public class MainActivity extends AppCompatActivity implements NodeAdapter.ItemC
      *
      * @param k is the integer key that needs looking up
      * */
-    public void lookup(int k) {
+    public void lookupK(int k) {
         int id = -1;
         String process = "";
 
@@ -214,27 +210,29 @@ public class MainActivity extends AppCompatActivity implements NodeAdapter.ItemC
         process += "Starting at first node, node id = " + id + "\n";
 
         boolean found = false;
-        Node currentNode = null;
+        Node succNode = null;
+        int prevId = id;
 
         while(!found) {
-            currentNode = nodeList.get(id);
+            succNode = nodeList.get(id);
             process += "Checking if current node (Node " + nodeList.get(id).getId() + ") is succ(k)\n";
-            if (currentNode.getId() >= k) {
+            if (succNode.getId() >= k || prevId > id) {
                 process += "Current node is succ(k). Found succ(k).\n";
                 found = true;
             } else {
                 process += "Current node is not succ(k). Moving to the succ(currentNode).\n";
-                id = currentNode.getSuccNode().getId();
+                prevId = id;
+                id = succNode.getSuccNode().getId();
 
             }
         }
 
-        process += "Retrieved " + currentNode.getData() + " from Node " + currentNode.getId();
-        Toast.makeText(this, "Retrieved " + currentNode.getData() + " from Node " + currentNode.getId(),
+        process += "Retrieved " + succNode.getData() + " from Node " + succNode.getId();
+        Toast.makeText(this, "Retrieved " + succNode.getData() + " from Node " + succNode.getId(),
                 Toast.LENGTH_SHORT).show();
 
         try {
-            Thread.sleep(3000);
+            Thread.sleep(2000);
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
@@ -243,6 +241,35 @@ public class MainActivity extends AppCompatActivity implements NodeAdapter.ItemC
         intent.putExtra("process", process);
         startActivity(intent);
     }
+
+    private Node lookup(int nodeId) {
+        int id = -1;
+
+        for(int i = 0; i < nodeList.size(); i++) {
+            if(nodeList.get(i).isRealNode() == true) { //This will be the first actual node in the chord system
+                id = nodeList.get(i).getId();
+                break;
+            }
+        }
+
+        boolean found = false;
+        Node succNode = null;
+        int prevId = -1;
+
+        while(!found) {
+            succNode = nodeList.get(id);
+            if (succNode.getId() > nodeId || prevId >= id) {
+                found = true;
+            } else {
+                prevId = id;
+                id = succNode.getSuccNode().getId();
+
+            }
+        }
+
+        return succNode;
+    }
+
 
     @Override
     public void onItemClick(int position) {

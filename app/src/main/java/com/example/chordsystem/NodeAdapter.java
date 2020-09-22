@@ -80,12 +80,12 @@ public class NodeAdapter extends RecyclerView.Adapter<NodeAdapter.NodeViewHolder
 
         @Override
         public void onClick(View view) {
-            mClickListener.onItemClick(getAdapterPosition());
+            mClickListener.onItemClick(getAdapterPosition() % 16);
         }
 
         @Override
         public boolean onLongClick(View view) {
-            mClickListener.onItemLongClick(getAdapterPosition());
+            mClickListener.onItemLongClick(getAdapterPosition() % 16);
             return true;
         }
     }
