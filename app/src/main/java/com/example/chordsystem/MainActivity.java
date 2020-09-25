@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -30,6 +31,9 @@ public class MainActivity extends AppCompatActivity implements NodeAdapter.ItemC
     private Button addNodeButton;
     private Button lookupButton;
     private EditText lookupKeyEditText;
+
+    String process = "";
+    List<Integer> listOfVisitedNotes = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,14 +70,65 @@ public class MainActivity extends AppCompatActivity implements NodeAdapter.ItemC
             public void onClick(View view) {
                 String lookupKeyStr = lookupKeyEditText.getText().toString();
                 int lookupKey = Integer.parseInt(lookupKeyStr);
+                if(lookupKey >= 0 && lookupKey <= 15) {
+                    lookupK(lookupKey);
 
-                lookupK(lookupKey);
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            for(int i = 0; i < listOfVisitedNotes.size(); i++) {
+                                Node testNode = nodeList.get(listOfVisitedNotes.get(i));
+                                testNode.setBeingLookedAt(true);
+                                nodeList.remove(testNode.getId());
+                                nodeList.add(testNode.getId(), testNode);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        adapter.setNodes(nodeList);
+                                    }
+                                });
+
+                                try {
+                                    Thread.sleep(2000);
+                                } catch (InterruptedException ex) {
+
+                                }
+
+                                testNode.setBeingLookedAt(false);
+                                nodeList.remove(testNode.getId());
+                                nodeList.add(testNode.getId(), testNode);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        adapter.setNodes(nodeList);
+                                    }
+                                });
+
+                                try {
+                                    Thread.sleep(1000);
+                                } catch (InterruptedException ex) {
+
+                                }
+                            }
+
+                            Intent intent = new Intent(MainActivity.this, LookupResults.class);
+                            intent.putExtra("process", process);
+                            startActivity(intent);
+                        }
+                    }).start();
+                } else {
+                    Toast.makeText(MainActivity.this, "Invalid number entered. Only 0 - 15 are valid",
+                            Toast.LENGTH_SHORT).show();
+                }
+
+
+
             }
         });
 
         recyclerView = findViewById(R.id.rv_chordSystem);
         recyclerView.setHasFixedSize(true);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
         adapter = new NodeAdapter(this, this);
         recyclerView.setAdapter(adapter);
 
@@ -198,7 +253,7 @@ public class MainActivity extends AppCompatActivity implements NodeAdapter.ItemC
      * */
     public void lookupK(int k) {
         int id = -1;
-        String process = "";
+        process = "";
 
         for(int i = 0; i < nodeList.size(); i++) {
             if(nodeList.get(i).isRealNode() == true) { //This will be the first actual node in the chord system
@@ -215,6 +270,7 @@ public class MainActivity extends AppCompatActivity implements NodeAdapter.ItemC
 
         while(!found) {
             succNode = nodeList.get(id);
+            listOfVisitedNotes.add(id);
             process += "Checking if current node (Node " + nodeList.get(id).getId() + ") is succ(k)\n";
             if (succNode.getId() >= k || prevId > id) {
                 process += "Current node is succ(k). Found succ(k).\n";
@@ -223,23 +279,11 @@ public class MainActivity extends AppCompatActivity implements NodeAdapter.ItemC
                 process += "Current node is not succ(k). Moving to the succ(currentNode).\n";
                 prevId = id;
                 id = succNode.getSuccNode().getId();
-
             }
         }
 
         process += "Retrieved " + succNode.getData() + " from Node " + succNode.getId();
-        Toast.makeText(this, "Retrieved " + succNode.getData() + " from Node " + succNode.getId(),
-                Toast.LENGTH_SHORT).show();
 
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException ex) {
-            ex.printStackTrace();
-        }
-
-        Intent intent = new Intent(this, LookupResults.class);
-        intent.putExtra("process", process);
-        startActivity(intent);
     }
 
     private Node lookup(int nodeId) {

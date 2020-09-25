@@ -10,7 +10,7 @@
 
     <TextView
         android:id="@+id/rv_listItem_nodeTitle"
-        android:textSize="24sp"
+        android:textSize="16sp"
         android:text="Node"
         android:textColor="@color/fakeNode"
         android:layout_gravity="center_horizontal"
@@ -19,7 +19,7 @@
 
     <TextView
         android:id="@+id/rv_listItem_identifier"
-        android:textSize="48sp"
+        android:textSize="24sp"
         android:textColor="@color/fakeNode"
         android:layout_gravity="center_horizontal"
         android:layout_width="wrap_content"

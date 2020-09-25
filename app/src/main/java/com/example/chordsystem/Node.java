@@ -8,6 +8,7 @@ public class Node {
     private Node predNode = null;
 
     private boolean isRealNode = false;
+    private boolean isBeingLookedAt = false;
 
     private String data = "example data";
 
@@ -55,4 +56,11 @@ public class Node {
         return data;
     }
 
+    public void setBeingLookedAt(boolean value) {
+        isBeingLookedAt = value;
+    }
+
+    public boolean isBeingLookedAt() {
+        return isBeingLookedAt;
+    }
 }

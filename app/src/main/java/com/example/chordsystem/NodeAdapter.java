@@ -41,6 +41,11 @@ public class NodeAdapter extends RecyclerView.Adapter<NodeAdapter.NodeViewHolder
             holder.nodeIdentifier.setText(currentNode.getId() + "");
             holder.nodeIdentifier.setTextColor(mContext.getResources().getColor(R.color.colorPrimaryDark));
             holder.realNode.setTextColor(mContext.getResources().getColor(android.R.color.black));
+            if(currentNode.isBeingLookedAt() == true) {
+                holder.nodeIdentifier.setTextColor(mContext.getResources().getColor(android.R.color.holo_red_dark));
+            } else {
+                holder.nodeIdentifier.setTextColor(mContext.getResources().getColor(R.color.colorPrimaryDark));
+            }
         } else {
             holder.nodeIdentifier.setText(currentNode.getFakeId() + "");
             holder.nodeIdentifier.setTextColor(mContext.getResources().getColor(R.color.fakeNode));
@@ -55,7 +60,6 @@ public class NodeAdapter extends RecyclerView.Adapter<NodeAdapter.NodeViewHolder
         if (mNodes == null) return 0;
         return Integer.MAX_VALUE;
     }
-
 
 
     public void setNodes(List<Node> nodes) {
